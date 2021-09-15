@@ -28,7 +28,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()  #
 
     parser.add_argument("--task", default=None, required=True, type=str, help="The name of the task to train")
     parser.add_argument("--model_dir", default=None, required=True, type=str, help="Path to save, load model")
