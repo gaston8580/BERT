@@ -3,5 +3,5 @@
 学习bert进行nlp下游任务时的流程
 
 ## BERT_finetune_cls：意图分类任务
-
+代码详解：https://blog.csdn.net/weixin_40633696/article/details/120120452
 ## BERT_finetune_ner：实体识别任务
