@@ -60,11 +60,14 @@ class InputFeatures(object):
 
 
 class NerProcessor(object):
-    """Processor for the JointBERT data set """
+    """
+    Processor for the JointBERT data set
+    BERT的NER任务数据处理器
+    """
 
     def __init__(self, args):
         self.args = args
-        self.slot_labels = get_slot_labels(args)
+        self.slot_labels = get_slot_labels(args)  # 读出整理好的ner标签。list
 
         self.input_text_file = 'seq.in'
         self.slot_labels_file = 'seq.out'
@@ -120,7 +123,19 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
                                  mask_padding_with_zero=True,
                                  slot_label_lst=None,
                                  ):
+    """
+    将之前读取的数据进行添加[CLS],[SEP]标记，padding等操作
+    args:
+        examples: 样本实例列表
+        pad_token_label_id: Use cross entropy ignore index as padding label id so that only real label ids contribute to the loss later
+        cls_token_segment_id： 取0
+        sequence_a_segment_id： 取0
+        pad_token_segment_id： 取0
+        mask_padding_with_zero： attention mask
+        slot_label_lst: ner标签
+    """
     # Setting based on the current model type
+    # 以BERT tokenizer为例
     cls_token = tokenizer.cls_token
     sep_token = tokenizer.sep_token
     unk_token = tokenizer.unk_token
@@ -131,7 +146,7 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
         if ex_index % 5000 == 0:
             logger.info("Writing example %d of %d" % (ex_index, len(examples)))
 
-        # Tokenize word by word (for NER)
+        # 分词
         tokens = []
         slot_labels_ids = []
         for word, slot_label in zip(example.words, example.slot_labels):
@@ -149,7 +164,9 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
             # pad_token_label_id: -100, loss function  忽略的label编号
 
         # Account for [CLS] and [SEP]
+        # 记录[CLS]和[SEP]
         special_tokens_count = 2
+        # 如果句子长了就截断
         if len(tokens) > max_seq_len - special_tokens_count:
             tokens = tokens[:(max_seq_len - special_tokens_count)]
             slot_labels_ids = slot_labels_ids[:(max_seq_len - special_tokens_count)]
@@ -161,9 +178,10 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
 
         # Add [CLS] token
         tokens = [cls_token] + tokens
-        slot_labels_ids = [pad_token_label_id] + slot_labels_ids  # [CLS] label: pad_token_label_id
+        slot_labels_ids = [pad_token_label_id] + slot_labels_ids  # 将[CLS]的pad_token_label_id加到slot_labels_ids最前面
         token_type_ids = [cls_token_segment_id] + token_type_ids
 
+        # 把token转化为id
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
 
         # The mask has 1 for real tokens and 0 for padding tokens. Only real
@@ -180,7 +198,7 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
         assert len(input_ids) == max_seq_len, "Error with input length {} vs {}".format(len(input_ids), max_seq_len)
         assert len(attention_mask) == max_seq_len, "Error with attention mask length {} vs {}".format(len(attention_mask), max_seq_len)
         assert len(token_type_ids) == max_seq_len, "Error with token type length {} vs {}".format(len(token_type_ids), max_seq_len)
-        assert len(slot_labels_ids) == max_seq_len, "Error with slot labels length {} vs {}".format(len(slot_labels_ids), max_seq_len)
+        assert len(slot_labels_ids) == max_seq_len,  "Error with slot labels length {} vs {}".format(len(slot_labels_ids), max_seq_len)
 
         if 1198 < ex_index < 1200:
             logger.info("*** Example ***")
@@ -205,7 +223,7 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
 
 
 def load_and_cache_examples(args, tokenizer, mode):
-    processor = processors[args.task](args)
+    processor = processors[args.task](args)  # 即：NerProcessor(args)
 
     # Load data features from cache or dataset file
     cached_features_file = os.path.join(
@@ -213,7 +231,7 @@ def load_and_cache_examples(args, tokenizer, mode):
         'cached_{}_{}_{}_{}'.format(
             mode,
             args.task,
-            list(filter(None, args.model_name_or_path.split("/"))).pop(),
+            list(filter(None, args.model_name_or_path.split("/"))).pop(),  # filter() 函数用于过滤序列，过滤掉不符合条件的元素，返回由符合条件元素组成的新列表。pop()返回的是移除的值。
             args.max_seq_len
         )
     )
@@ -236,6 +254,7 @@ def load_and_cache_examples(args, tokenizer, mode):
             raise Exception("For mode, Only train, dev, test is available")
 
         # Use cross entropy ignore index as padding label id so that only real label ids contribute to the loss later
+        # 添加[CLS],[SEP]标记、input_id、slot_labels_ids、padding等操作
         pad_token_label_id = args.ignore_index
         features = convert_examples_to_features(examples, args.max_seq_len, tokenizer,
                                                 pad_token_label_id=pad_token_label_id,
@@ -244,11 +263,13 @@ def load_and_cache_examples(args, tokenizer, mode):
         torch.save(features, cached_features_file)
 
     # Convert to Tensors and build dataset
+    # 将特征转化为tensor
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
     all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
     all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
     all_slot_labels_ids = torch.tensor([f.slot_labels_ids for f in features], dtype=torch.long)
 
+    # 将各种tensor打包，类似zip，要求各 tensor 第一维相等(样本数量)
     dataset = TensorDataset(all_input_ids, all_attention_mask,
                             all_token_type_ids, all_slot_labels_ids
                             )

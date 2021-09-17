@@ -9,14 +9,14 @@ from seqeval.metrics import precision_score, recall_score, f1_score
 from transformers import BertConfig, DistilBertConfig, AlbertConfig
 from transformers import BertTokenizer, DistilBertTokenizer, AlbertTokenizer
 
-from bert_finetune_ner.model import NerBERT
+from model import NerBERT
 
 MODEL_CLASSES = {
     'bert': (BertConfig, NerBERT, BertTokenizer),
 }
 
 MODEL_PATH_MAP = {
-    'bert': './bert_finetune_ner/resources/uncased_L-2_H-128_A-2',
+    'bert': 'resources/uncased_L-2_H-128_A-2',
 }
 
 
@@ -25,7 +25,7 @@ def get_slot_labels(args):
 
 
 def load_tokenizer(args):
-    return MODEL_CLASSES[args.model_type][2].from_pretrained(args.model_name_or_path)
+    return MODEL_CLASSES[args.model_type][2].from_pretrained(args.model_name_or_path)  # BertTokenizer.from_pretrained('resources/uncased_L-2_H-128_A-2')
 
 
 def init_logger():
