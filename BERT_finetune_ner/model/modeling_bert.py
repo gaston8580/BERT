@@ -7,7 +7,7 @@ from .module import SlotClassifier
 
 class NerBERT(BertPreTrainedModel):
     def __init__(self, config, args, slot_label_lst):
-        super(NerBERT, self).__init__(config)
+        super().__init__(config)
         self.args = args
         self.num_slot_labels = len(slot_label_lst)
 
@@ -27,9 +27,9 @@ class NerBERT(BertPreTrainedModel):
         outputs = self.bert(input_ids, attention_mask=attention_mask,
                             token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
 
-        sequence_output = outputs[0]  # [B, L, D]
+        sequence_output = outputs[0]  # [B, L, D] 输出句向量, size:[32, 50, 128], 32:batch size, 50:最大句子长度, 128:词向量维度
 
-        pooled_output = outputs[1]  # [CLS]  # [B, D]
+        pooled_output = outputs[1]  # [CLS]向量,size:[32, 128], 32:batch size, 128:词向量维度
 
         slot_logits = self.slot_classifier(sequence_output)  # (B, L, num_slot_labels)
         outputs = (slot_logits,) + outputs[2:]  # add hidden states and attention if they are here
