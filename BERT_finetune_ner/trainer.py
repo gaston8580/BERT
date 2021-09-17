@@ -60,6 +60,11 @@ class Trainer(object):
         optimizer_grouped_parameters += [
             {
                 'params': [p for n, p in bert_params if not any(nd in n for nd in no_decay)],
+                # 等价于：
+                # for n,p in bert_params:
+                #     if any(nd in n for nd in no_decay): 判断所有nd是否在n中
+                #         print(p)
+
                 'weight_decay': self.args.weight_decay,
                 "lr": self.args.learning_rate,
             },
@@ -105,7 +110,7 @@ class Trainer(object):
             ]
 
         optimizer = AdamW(optimizer_grouped_parameters, lr=self.args.learning_rate, eps=self.args.adam_epsilon)
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=t_total)
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=t_total)  # lr warmup 参考：https://www.cnblogs.com/douzujun/p/13868472.html
 
         # Train!
         logger.info("***** Running training *****")

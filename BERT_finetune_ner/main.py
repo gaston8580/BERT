@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--task", default='atis', required=False, type=str, help="The name of the task to train")
-    parser.add_argument("--model_dir", default='experiments/outputs/nerbert_0', required=False, type=str,
+    parser.add_argument("--model_dir", default='experiments/outputs/nerbert_5', required=False, type=str,
                         help="Path to save, load model")
     parser.add_argument("--data_dir", default="./data", type=str, help="The input data dir")
     parser.add_argument("--slot_label_file", default="slot_label.txt", type=str, help="Slot Label file")
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     )
 
     # CRF option
-    parser.add_argument("--use_crf", action="store_true", help="Whether to use CRF")
+    parser.add_argument("--use_crf", action="store_true", default=True,help="Whether to use CRF")
     parser.add_argument(
         "--crf_learning_rate", default=5e-5, type=float, help="The initial learning rate for CRF layer."
     )
