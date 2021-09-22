@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 class InputExample(object):
     """
     A single training/test example for simple sequence classification.
-
+    一个单独的序列分类样本实例
+    一个样本完全可以用一个dict来表示，但是使用 InputExample 类，作为一个python类，具有一些方便之处
     Args:
         guid: Unique id for the example.
         words: list. The words of the sequence.
@@ -20,31 +21,49 @@ class InputExample(object):
     """
 
     def __init__(self, guid, words, slot_labels=None):
-        self.guid = guid
-        self.words = words
-        self.slot_labels = slot_labels
+        self.guid = guid  # 每个样本的独特的序号
+        self.words = words  # 样本的输入序列
+        self.slot_labels = slot_labels  # 样本的NER标签
 
     def __repr__(self):
+        # 默认为： “类名+object at+内存地址”这样的信息表示这个实例；
+        # 这里重写成了想要输出的信息；
+        # print(input_example) 时候显示；
         return str(self.to_json_string())
 
     def to_dict(self):
-        """Serializes this instance to a Python dictionary."""
+        """
+        Serializes this instance to a Python dictionary.
+        实例序列化为dict
+        """
+        # __dict__：
+        # 类 的静态函数、类函数、普通函数、全局变量以及一些内置的属性都是放在类__dict__里的
+        # 对象实例的__dict__中存储了一些self.xxx的一些东西
+        # 参见 https://www.cnblogs.com/starrysky77/p/9102344.html
+
         output = copy.deepcopy(self.__dict__)
         return output
 
     def to_json_string(self):
-        """Serializes this instance to a JSON string."""
+        """
+        Serializes this instance to a JSON string.
+        实例序列化为JSON字符串
+        """
+        # 类的性质等信息dump进入json string
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
 
 
 class InputFeatures(object):
-    """A single set of features of data."""
+    """
+    A single set of features of data.
+    输入数据特征→JSON字符串
+    """
 
     def __init__(self, input_ids, attention_mask, token_type_ids, slot_labels_ids):
-        self.input_ids = input_ids
-        self.attention_mask = attention_mask
-        self.token_type_ids = token_type_ids
-        self.slot_labels_ids = slot_labels_ids
+        self.input_ids = input_ids  # 输入样本序列在bert词表里的索引，可以直接喂给nn.embedding
+        self.attention_mask = attention_mask  # 注意力mask，padding的部分为0，其他为1
+        self.token_type_ids = token_type_ids  # 表示每个token属于句子1还是句子2（值为0或1）,单句分类任务值都是0
+        self.slot_labels_ids = slot_labels_ids  # NER标签（复数）序号。
 
     def __repr__(self):
         return str(self.to_json_string())
@@ -91,7 +110,8 @@ class NerProcessor(object):
             # 2. slot
             slot_labels = []
             for s in slot.split():
-                slot_labels.append(self.slot_labels.index(s) if s in self.slot_labels else self.slot_labels.index("UNK"))
+                slot_labels.append(
+                    self.slot_labels.index(s) if s in self.slot_labels else self.slot_labels.index("UNK"))
 
             assert len(words) == len(slot_labels)
             examples.append(InputExample(guid=guid, words=words, slot_labels=slot_labels))
@@ -196,9 +216,12 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
         slot_labels_ids = slot_labels_ids + ([pad_token_label_id] * padding_length)
 
         assert len(input_ids) == max_seq_len, "Error with input length {} vs {}".format(len(input_ids), max_seq_len)
-        assert len(attention_mask) == max_seq_len, "Error with attention mask length {} vs {}".format(len(attention_mask), max_seq_len)
-        assert len(token_type_ids) == max_seq_len, "Error with token type length {} vs {}".format(len(token_type_ids), max_seq_len)
-        assert len(slot_labels_ids) == max_seq_len,  "Error with slot labels length {} vs {}".format(len(slot_labels_ids), max_seq_len)
+        assert len(attention_mask) == max_seq_len, "Error with attention mask length {} vs {}".format(
+            len(attention_mask), max_seq_len)
+        assert len(token_type_ids) == max_seq_len, "Error with token type length {} vs {}".format(len(token_type_ids),
+                                                                                                  max_seq_len)
+        assert len(slot_labels_ids) == max_seq_len, "Error with slot labels length {} vs {}".format(
+            len(slot_labels_ids), max_seq_len)
 
         if 1198 < ex_index < 1200:
             logger.info("*** Example ***")
@@ -210,7 +233,6 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
             logger.info("attention_mask: %s" % " ".join([str(x) for x in attention_mask]))
             logger.info("token_type_ids: %s" % " ".join([str(x) for x in token_type_ids]))
             logger.info("slot_labels: %s" % " ".join([str(x) for x in slot_labels_ids]))
-
 
         features.append(
             InputFeatures(input_ids=input_ids,
@@ -231,7 +253,8 @@ def load_and_cache_examples(args, tokenizer, mode):
         'cached_{}_{}_{}_{}'.format(
             mode,
             args.task,
-            list(filter(None, args.model_name_or_path.split("/"))).pop(),  # filter() 函数用于过滤序列，过滤掉不符合条件的元素，返回由符合条件元素组成的新列表。pop()返回的是移除的值。
+            list(filter(None, args.model_name_or_path.split("/"))).pop(),
+            # filter() 函数用于过滤序列，过滤掉不符合条件的元素，返回由符合条件元素组成的新列表。pop()返回的是移除的值。
             args.max_seq_len
         )
     )
