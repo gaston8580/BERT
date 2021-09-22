@@ -44,7 +44,8 @@ class Trainer(object):
         # 计算训练的总的更新步数，用于learning rate的schedule (不是迭代步数)
         if self.args.max_steps > 0:
             t_total = self.args.max_steps
-            self.args.num_train_epochs = self.args.max_steps // (len(train_dataloader) // self.args.gradient_accumulation_steps) + 1
+            self.args.num_train_epochs = self.args.max_steps // (
+                        len(train_dataloader) // self.args.gradient_accumulation_steps) + 1
         else:
             t_total = len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs
 
@@ -56,7 +57,7 @@ class Trainer(object):
         optimizer_grouped_parameters = []
         # BERT部分参数，设置一个较低的学习率
         bert_params = list(self.model.bert.named_parameters())
-        no_decay = ['bias', 'LayerNorm.weight']  # bias和层归一化操作中的参数做weight decay
+        no_decay = ['bias', 'LayerNorm.weight']  # bias和层归一化操作中的参数不做weight decay，否则会导致模型学偏
         optimizer_grouped_parameters += [
             {
                 'params': [p for n, p in bert_params if not any(nd in n for nd in no_decay)],
@@ -93,7 +94,6 @@ class Trainer(object):
 
         # crf层参数
         if self.args.use_crf:
-
             crf_params = list(self.model.crf.named_parameters())
             no_decay = ['start_transitions', 'end_transitions']
             optimizer_grouped_parameters += [
@@ -110,16 +110,18 @@ class Trainer(object):
             ]
 
         optimizer = AdamW(optimizer_grouped_parameters, lr=self.args.learning_rate, eps=self.args.adam_epsilon)
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=t_total)  # lr warmup 参考：https://www.cnblogs.com/douzujun/p/13868472.html
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.args.warmup_steps,
+                                                    num_training_steps=t_total)  # lr warmup 参考：https://www.cnblogs.com/douzujun/p/13868472.html
 
         # Train!
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(self.train_dataset))
         logger.info("  Num Epochs = %d", self.args.num_train_epochs)
         logger.info("  Total train batch size = %d", self.args.train_batch_size)
-        logger.info("  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps)  # 梯度累加次数，详见：https://www.cnblogs.com/sddai/p/14598018.html
+        logger.info("  Gradient Accumulation steps = %d",
+                    self.args.gradient_accumulation_steps)  # 梯度累加次数，详见：https://www.cnblogs.com/sddai/p/14598018.html
         logger.info("  Total optimization steps = %d", t_total)
-        logger.info("  Logging steps = %d", self.args.logging_steps)   # 计算dev performance
+        logger.info("  Logging steps = %d", self.args.logging_steps)  # 计算dev performance
         logger.info("  Save steps = %d", self.args.save_steps)  # 保存model checkpoint
 
         global_step = 0
@@ -147,13 +149,14 @@ class Trainer(object):
                 if self.args.gradient_accumulation_steps > 1:
                     loss = loss / self.args.gradient_accumulation_steps
 
-                loss.backward()   # 4.反向传播，计算梯度
+                loss.backward()  # 4.反向传播，计算梯度
 
                 tr_loss += loss.item()
 
                 # 设置梯度清空、更新参数的间隔步数，如gradient_accumulation_steps = 3，则每隔3个batch清空一次梯度
                 if (step + 1) % self.args.gradient_accumulation_steps == 0:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.max_grad_norm)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+                                                   self.args.max_grad_norm)  # 梯度裁剪，当梯度过大时裁剪，防止梯度爆炸
 
                     optimizer.step()  # 5.更新参数
                     scheduler.step()  # Update learning rate schedule
@@ -216,7 +219,7 @@ class Trainer(object):
             if slot_preds is None:
                 if self.args.use_crf:
                     # decode() in `torchcrf` returns list with best index directly
-                    slot_preds = np.array(self.model.crf.decode(slot_logits))
+                    slot_preds = np.array(self.model.crf.decode(slot_logits))  # crf解码模块，维特比算法
                 else:
                     slot_preds = slot_logits.detach().cpu().numpy()
 
@@ -227,7 +230,8 @@ class Trainer(object):
                 else:
                     slot_preds = np.append(slot_preds, slot_logits.detach().cpu().numpy(), axis=0)
 
-                out_slot_labels_ids = np.append(out_slot_labels_ids, inputs["slot_labels_ids"].detach().cpu().numpy(), axis=0)
+                out_slot_labels_ids = np.append(out_slot_labels_ids, inputs["slot_labels_ids"].detach().cpu().numpy(),
+                                                axis=0)
 
         eval_loss = eval_loss / nb_eval_steps
         results = {
@@ -236,7 +240,7 @@ class Trainer(object):
 
         # Slot result
         if not self.args.use_crf:
-            slot_preds = np.argmax(slot_preds, axis=2) # (n, L, NUM_OF_LABELS) --> (n, L, 1)
+            slot_preds = np.argmax(slot_preds, axis=2)  # (n, L, NUM_OF_LABELS) --> (n, L, 1)
         slot_label_map = {i: label for i, label in enumerate(self.slot_label_lst)}
         out_slot_label_list = [[] for _ in range(out_slot_labels_ids.shape[0])]
         slot_preds_list = [[] for _ in range(out_slot_labels_ids.shape[0])]
