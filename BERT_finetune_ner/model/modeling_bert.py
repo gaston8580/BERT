@@ -36,6 +36,7 @@ class NerBERT(BertPreTrainedModel):
 
         # Slot Softmax
         if slot_labels_ids is not None:
+            # 如果使用crf层，损失函数使用crf层自带的loss，否则使用交叉熵
             if self.args.use_crf:
                 slot_loss = self.crf(
                     slot_logits,
