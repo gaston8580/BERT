@@ -5,6 +5,6 @@
 ## 1. BERT_finetune_cls：意图分类任务
 代码详解：https://blog.csdn.net/weixin_40633696/article/details/120120452
 ## 2. BERT_finetune_ner：实体识别任务
-（1）进行了较详细的注释
+（1）对关键部分进行了较详细的注释
 
 （2）后续需要添加断点续训练
