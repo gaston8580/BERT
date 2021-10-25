@@ -1,0 +1,13 @@
+PAD
+UNK
+O
+B-BodyPart
+I-BodyPart
+B-Cure
+I-Cure
+B-Disease
+I-Disease
+B-Examine
+I-Examine
+B-Symptom
+I-Symptom
