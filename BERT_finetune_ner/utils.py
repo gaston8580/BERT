@@ -6,16 +6,18 @@ import torch
 import numpy as np
 from seqeval.metrics import precision_score, recall_score, f1_score
 
-from transformers import BertConfig, DistilBertConfig, AlbertConfig
-from transformers import BertTokenizer, DistilBertTokenizer, AlbertTokenizer
+from transformers import BertConfig, AlbertConfig, DistilBertConfig
+from transformers import BertTokenizer, AlbertTokenizer, DistilBertTokenizer
 
 from model import NerBERT
 
 MODEL_CLASSES = {
+    'albert': (AlbertConfig, NerBERT, BertTokenizer),
     'bert': (BertConfig, NerBERT, BertTokenizer),
 }
 
 MODEL_PATH_MAP = {
+    'albert': 'resources/albert_base_zh',
     'bert': 'resources/uncased_L-2_H-128_A-2',
 }
 

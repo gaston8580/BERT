@@ -8,10 +8,7 @@ import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
 
-import sys
-sys.path.append("./")
-
-from bert_finetune_ner.utils import init_logger, load_tokenizer, get_slot_labels, MODEL_CLASSES
+from utils import init_logger, load_tokenizer, get_slot_labels, MODEL_CLASSES
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +38,7 @@ def load_model(pred_config, args, device):
 
             json.dump(
                 p.cpu().detach().numpy().tolist(),
-                open(os.path.join("bert_finetune_ner/experiments/outputs/nerbert_0/", "%s.json" % n), "w", encoding="utf-8")
+                open(os.path.join("experiments/outputs/nerbert_5/", "%s.json" % n), "w", encoding="utf-8")
             )
 
         model.to(device)
@@ -216,9 +213,9 @@ if __name__ == "__main__":
     init_logger()
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--input_file", default="sample_pred_in.txt", type=str, help="Input file for prediction")
-    parser.add_argument("--output_file", default="sample_pred_out.txt", type=str, help="Output file for prediction")
-    parser.add_argument("--model_dir", default="./atis_model", type=str, help="Path to save, load model")
+    parser.add_argument("--input_file", default="./data/medical/dev/seq.in", type=str, help="Input file for prediction")
+    parser.add_argument("--output_file", default="./data/medical/dev/seq_predict.out", type=str, help="Output file for prediction")
+    parser.add_argument("--model_dir", default="./experiments/outputs/nerbert_5", type=str, help="Path to save, load model")
 
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size for prediction")
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")

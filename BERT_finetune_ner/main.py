@@ -1,8 +1,5 @@
 import argparse
 
-import sys
-# sys.path.append("./")
-
 from trainer import Trainer
 from utils import init_logger, load_tokenizer, read_prediction_text, set_seed, MODEL_CLASSES, MODEL_PATH_MAP
 from data_loader import load_and_cache_examples
@@ -11,7 +8,7 @@ from data_loader import load_and_cache_examples
 def main(args):
     init_logger()
     set_seed(args)
-    tokenizer = load_tokenizer(args)
+    tokenizer = load_tokenizer(args)  # 加载分词器
 
     train_dataset = load_and_cache_examples(args, tokenizer, mode="train")
     dev_dataset = load_and_cache_examples(args, tokenizer, mode="dev")
@@ -24,25 +21,25 @@ def main(args):
 
     if args.do_eval:
         trainer.load_model()
-        trainer.evaluate("test")
+        trainer.evaluate("dev")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--task", default='atis', required=False, type=str, help="The name of the task to train")
+    parser.add_argument("--task", default='medical', required=False, type=str, help="The name of the task to train")
     parser.add_argument("--model_dir", default='experiments/outputs/nerbert_5', required=False, type=str,
                         help="Path to save, load model")
     parser.add_argument("--data_dir", default="./data", type=str, help="The input data dir")
     parser.add_argument("--slot_label_file", default="slot_label.txt", type=str, help="Slot Label file")
 
-    parser.add_argument("--model_type", default="bert", type=str,
+    parser.add_argument("--model_type", default="albert", type=str,
                         help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
 
     parser.add_argument('--seed', type=int, default=1234, help="random seed for initialization")
     parser.add_argument("--train_batch_size", default=32, type=int, help="Batch size for training.")
     parser.add_argument("--eval_batch_size", default=64, type=int, help="Batch size for evaluation.")
-    parser.add_argument("--max_seq_len", default=50, type=int,
+    parser.add_argument("--max_seq_len", default=128, type=int,
                         help="The maximum total input sequence length after tokenization.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--num_train_epochs", default=10.0, type=float,
@@ -73,7 +70,7 @@ if __name__ == '__main__':
     )
 
     # CRF option
-    parser.add_argument("--use_crf", action="store_true", default=True,help="Whether to use CRF")
+    parser.add_argument("--use_crf", action="store_true", default=True, help="Whether to use CRF")
     parser.add_argument(
         "--crf_learning_rate", default=5e-5, type=float, help="The initial learning rate for CRF layer."
     )
@@ -83,4 +80,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     args.model_name_or_path = MODEL_PATH_MAP[args.model_type]
-    main(args)
+    main(args)  # 模型训练

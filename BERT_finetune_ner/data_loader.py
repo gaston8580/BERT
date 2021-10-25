@@ -131,6 +131,7 @@ class NerProcessor(object):
 
 processors = {
     "atis": NerProcessor,
+    "medical": NerProcessor,
     "snips": NerProcessor
 }
 
@@ -223,7 +224,7 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
         assert len(slot_labels_ids) == max_seq_len, "Error with slot labels length {} vs {}".format(
             len(slot_labels_ids), max_seq_len)
 
-        if 1198 < ex_index < 1200:
+        if 1199 < ex_index < 1201:
             logger.info("*** Example ***")
             logger.info("guid: %s" % example.guid)
             logger.info("original words: %s" % " ".join([str(x) for x in example.words]))
