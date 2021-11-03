@@ -1,6 +1,6 @@
 import os
 import logging
-from tqdm import tqdm, trange
+from tqdm import tqdm, trange  # tqdm模块是python进度条库
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
@@ -17,9 +17,9 @@ class Trainer(object):
         self.dev_dataset = dev_dataset
         self.test_dataset = test_dataset
 
+        # 加载模型，标签名称到编号的映射 (label maps):
         self.intent_label_lst = get_intent_labels(args)
-        # Use cross entropy ignore index as padding label id so that only real label ids contribute to the loss later
-
+        # 加载模型的config，model本身
         self.config_class, self.model_class, _ = MODEL_CLASSES[args.model_type]
         self.config = self.config_class.from_pretrained(args.model_name_or_path, finetuning_task=args.task)
         self.model = self.model_class.from_pretrained(args.model_name_or_path,
@@ -29,27 +29,33 @@ class Trainer(object):
                                                       )
 
         # GPU or CPU
+        # 将模型放到GPU，如果有的话
         self.device = "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu"
         self.model.to(self.device)
 
     def train(self):
+        # torch自带的sampler类，功能是每次返回一个随机的样本索引
         train_sampler = RandomSampler(self.train_dataset)
+
+        # 定义dataloader
+        # 使用dataloader输出batch
         train_dataloader = DataLoader(self.train_dataset, sampler=train_sampler, batch_size=self.args.train_batch_size)
 
+        # 计算训练的总的更新步数，用于learning rate的schedule (不是迭代步数)
         if self.args.max_steps > 0:
             t_total = self.args.max_steps
             self.args.num_train_epochs = self.args.max_steps // (len(train_dataloader) // self.args.gradient_accumulation_steps) + 1
         else:
             t_total = len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs
 
-        # Prepare optimizer and schedule (linear warmup and decay)
-        no_decay = ['bias', 'LayerNorm.weight']
+        # 准备优化器、学习率调度器（线性层warmup预热和decay）
+        no_decay = ['bias', 'LayerNorm.weight']  # bias和层归一化操作中的参数做weight decay
         optimizer_grouped_parameters = [
             {'params': [p for n, p in self.model.named_parameters() if not any(nd in n for nd in no_decay)],
              'weight_decay': self.args.weight_decay},
             {'params': [p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
-        optimizer = AdamW(optimizer_grouped_parameters, lr=self.args.learning_rate, eps=self.args.adam_epsilon)
+        optimizer = AdamW(optimizer_grouped_parameters, lr=self.args.learning_rate, eps=self.args.adam_epsilon)  # eps:为了增加数值计算的稳定性而加到分母里的项，非常小
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=t_total)
 
         # Train!
@@ -57,22 +63,24 @@ class Trainer(object):
         logger.info("  Num examples = %d", len(self.train_dataset))
         logger.info("  Num Epochs = %d", self.args.num_train_epochs)
         logger.info("  Total train batch size = %d", self.args.train_batch_size)
-        logger.info("  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps)
+        logger.info("  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps)  # 梯度累加次数，详见：https://www.cnblogs.com/sddai/p/14598018.html
         logger.info("  Total optimization steps = %d", t_total)
-        logger.info("  Logging steps = %d", self.args.logging_steps)
-        logger.info("  Save steps = %d", self.args.save_steps)
+        logger.info("  Logging steps = %d", self.args.logging_steps)  # 计算dev performance
+        logger.info("  Save steps = %d", self.args.save_steps)  # 保存model checkpoint
 
         global_step = 0
         tr_loss = 0.0
-        self.model.zero_grad()
 
-        train_iterator = trange(int(self.args.num_train_epochs), desc="Epoch")
+        # # 神经网络训练通常的步骤：
+        self.model.zero_grad()  # 1.训练前清空梯度
 
-        for _ in train_iterator:
+        train_iterator = trange(int(self.args.num_train_epochs), desc="Epoch")  # trange(x, desc="Epoch") 其中x为进度条切分的个数，desc为进度条前的描述文字
+        for _ in train_iterator:  # 迭代num_epoch次
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
+            # # 3. 设置cpu或者gpu模式，按batch读取特征数据
             for step, batch in enumerate(epoch_iterator):
                 self.model.train()
-                batch = tuple(t.to(self.device) for t in batch)  # GPU or CPU
+                batch = tuple(t.to(self.device) for t in batch)  # 将数据传到设备上面：GPU or CPU
 
                 inputs = {'input_ids': batch[0],
                           'attention_mask': batch[1],
@@ -80,21 +88,23 @@ class Trainer(object):
                           }
                 if self.args.model_type != 'distilbert':
                     inputs['token_type_ids'] = batch[2]
-                outputs = self.model(**inputs)
-                loss = outputs[0]
+                outputs = self.model(**inputs)  # 2.正向传播
+                loss = outputs[0]  # 3.计算损失
 
                 if self.args.gradient_accumulation_steps > 1:
                     loss = loss / self.args.gradient_accumulation_steps
 
-                loss.backward()
+                loss.backward()  # 4.反向传播，计算梯度
 
                 tr_loss += loss.item()
+
+                # 设置梯度清空、更新参数的间隔步数，如gradient_accumulation_steps = 3，则每隔3个batch清空一次梯度
                 if (step + 1) % self.args.gradient_accumulation_steps == 0:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.max_grad_norm)
 
-                    optimizer.step()
+                    optimizer.step()   # 5.更新参数
                     scheduler.step()  # Update learning rate schedule
-                    self.model.zero_grad()
+                    self.model.zero_grad()  # 6.清空梯度
                     global_step += 1
 
                     if self.args.logging_steps > 0 and global_step % self.args.logging_steps == 0:
@@ -159,7 +169,6 @@ class Trainer(object):
                 out_intent_label_ids = np.append(
                     out_intent_label_ids, inputs['intent_label_ids'].detach().cpu().numpy(), axis=0)
 
-
         eval_loss = eval_loss / nb_eval_steps
         results = {
             "loss": eval_loss
@@ -167,8 +176,6 @@ class Trainer(object):
 
         # Intent result
         intent_preds = np.argmax(intent_preds, axis=1)
-
-
 
         total_result = compute_metrics(intent_preds, out_intent_label_ids)
         results.update(total_result)
