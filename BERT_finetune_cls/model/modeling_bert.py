@@ -4,25 +4,20 @@ from transformers import BertPreTrainedModel, BertModel, BertConfig
 from torchcrf import CRF
 from .module import IntentClassifier
 
-
 class ClsBERT(BertPreTrainedModel):
     def __init__(self, config, args, intent_label_lst):
-        super(ClsBERT, self).__init__(config)
+        super().__init__(config)  # 声明继承父类的属性
         self.args = args
         self.num_intent_labels = len(intent_label_lst)
-        self.bert = BertModel(config=config)  # Load pretrained bert
-
-        self.intent_classifier = IntentClassifier(config.hidden_size, self.num_intent_labels, args.dropout_rate)
-
+        self.bert = BertModel(config=config)  # 加载bert预训练模型
+        self.intent_classifier = IntentClassifier(config.hidden_size, self.num_intent_labels, args.dropout_rate)  # 分类MLP层
 
     def forward(self, input_ids, attention_mask, token_type_ids, intent_label_ids):
         outputs = self.bert(input_ids, attention_mask=attention_mask,
-                            token_type_ids=token_type_ids)  # sequence_output, pooled_output, (hidden_states), (attentions)
-        sequence_output = outputs[0]
-        pooled_output = outputs[1]  # [CLS]
-
-        intent_logits = self.intent_classifier(pooled_output)
-
+                            token_type_ids=token_type_ids)  # 输出包含：sequence_output, pooled_output, (hidden_states), (attentions)
+        sequence_output = outputs[0]  # 输出句向量, size:[32, 250, 768], 32:batch size, 250:最大句子长度, 768:字向量维度
+        pooled_output = outputs[1]  # [CLS]向量, size:[32, 768], 32:batch size, 768:字向量维度
+        intent_logits = self.intent_classifier(pooled_output)  # MLP层分类结果，size:[32, 3], 32:batch size, 3:标签类别数量
         outputs = ((intent_logits),) + outputs[2:]  # add hidden states and attention if they are here
 
         # 1. Intent Softmax
