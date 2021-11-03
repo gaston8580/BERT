@@ -4,6 +4,7 @@
 
 ## 1. BERT_finetune_cls：意图分类任务
 代码详解：https://blog.csdn.net/weixin_40633696/article/details/120120452
+
 （1）对关键部分进行了较详细的注释
 
 （2）增加了albert中文预训练模型
