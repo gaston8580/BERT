@@ -74,8 +74,10 @@ class Trainer(object):
         # # 神经网络训练通常的步骤：
         self.model.zero_grad()  # 1.训练前清空梯度
 
-        train_iterator = trange(int(self.args.num_train_epochs), desc="Epoch")  # trange(x, desc="Epoch") 其中x为进度条切分的个数，desc为进度条前的描述文字
-        for _ in train_iterator:  # 迭代num_epoch次
+        # train_iterator = trange(int(self.args.num_train_epochs), desc="Epoch")  # trange(x, desc="Epoch") 其中x为进度条切分的个数，desc为进度条前的描述文字
+        # for _ in train_iterator:  # 迭代num_epoch次
+        for _ in range(int(self.args.num_train_epochs)):  # 迭代num_epoch次
+            print('epoch:{}/{}'.format(_ + 1, int(self.args.num_train_epochs)))
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
             # # 3. 设置cpu或者gpu模式，按batch读取特征数据
             for step, batch in enumerate(epoch_iterator):
