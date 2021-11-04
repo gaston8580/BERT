@@ -1,6 +1,6 @@
 ## 模型结构
 
-- Predict `slot label` from **one BERT model** 
+- 用BERT模型预测`slot label`
 - total_loss = slot_loss 
 
 ## 依赖
@@ -18,7 +18,7 @@
 |  ATIS   | 4,478  | 500 | 893  |  120         |
 | MEDICAL | 6,832  | 929 | 755  |  11          |
 
-- The number of labels are based on the _train_ dataset.
+- label的数量只基于训练集统计。
 
 ## 训练 & 验证
 
@@ -95,7 +95,7 @@ python bert_finetune_ner/predict.py --input_file bert_finetune_ner/data/atis/tes
 ## 结果
 
 - Run 5 ~ 10 epochs (Record the best result)
-- Only test with `uncased` model
+- 仅用了 `uncased` 模型测试
 
 |           |                  | Intent acc (%) | 
 | --------- | ---------------- | -------------- | 
