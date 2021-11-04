@@ -16,7 +16,7 @@
 |         | Train  | Dev | Test |  Slot (NER) Labels |
 |  -----  | ------ | --- | ---- |  ----------- |
 |  ATIS   | 4,478  | 500 | 893  |  120         |
-| DEDICAL | 6,832  | 929 | 755  |  11          |
+| MEDICAL | 6,832  | 929 | 755  |  11          |
 
 - The number of labels are based on the _train_ dataset.
 
